@@ -14,7 +14,7 @@ This repo contains steps to run mediation analysis between brain activation in r
   
 ### Pre-requisite
 #### Hardware requirements
-All stpes could be done on a standard research computer with reasonable CPUs and RAM. Except that the preprocessing was done on high performance cluster based on the recommendations from [fmriprep](https://fmriprep.org/en/stable/faq.html#how-much-cpu-time-and-ram-should-i-allocate-for-a-typical-fmriprep-run)
+All stpes could be done on a standard research computer with reasonable CPUs and RAM. Except that the preprocessing was done on high performance cluster based on the recommendations from [fmriprep website](https://fmriprep.org/en/stable/faq.html#how-much-cpu-time-and-ram-should-i-allocate-for-a-typical-fmriprep-run).
 
 #### Software requirements
 
@@ -22,8 +22,11 @@ All stpes could be done on a standard research computer with reasonable CPUs and
 
 the analysis was conducted and only tested for running on macOS Mojave (10.14.1) and Monterey (12.2.1).
 
-##### R dependencies
-
+##### Softwares
+- [Matlab_R2020b]() for neuroimaging analysis
+  -  Matlab dependencies: [SPM8](), 
+- R for non-neuroimaging analysis and mediation analysis
+  - R dependencies: rio, ggplot2, lme4, tidyverse, sjPlot, coefplot2, performance, see, broom.mixed, kableExtra, janitor, ggeffects, dplyr, gridExtra, qqplotr, emmeans, pbkrtest, knitr,ggpubr, here, table1, psych, broom,lsr, rstatix, formatR, RVAideMemoire, labelled, cowplot, readr, svglite, rmcorr, cowplot, grid, gtable, RColorBrewer, extrafont, corrplot, grDevices,icesTAF, gganimate, lmerTest
 
 
 ### data preprocessing and preparation
