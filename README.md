@@ -3,6 +3,7 @@
 This repo contains steps to run mediation analysis between brain activation in response to Facial Expressions of Emotion Task (FEET) and altered states of consciousness after acute ketamine administration.
 
 ## High-level steps
+- [Pre-requisite](###pre-requisite)
 - [data preprocessing and preparation](###-data-preprocessing-and-preparation)
   - [fMRI data](####-fmri-data)
   - [CADSS and 5D-ASC](####-cadss-and-5d-asc)
@@ -11,9 +12,23 @@ This repo contains steps to run mediation analysis between brain activation in r
   - [Linear mixed model analysis for CADSS and 5D-ASC](####-linear-mixed-model-analysis-for-cadss-and-5d-asc)
   - [Mediation analysis](####-mediation-analysis)
   
+### Pre-requisite
+#### Hardware requirements
+All stpes could be done on a standard research computer with reasonable CPUs and RAM. Except that the preprocessing was done on high performance cluster based on the recommendations from [fmriprep](https://fmriprep.org/en/stable/faq.html#how-much-cpu-time-and-ram-should-i-allocate-for-a-typical-fmriprep-run)
+
+#### Software requirements
+
+##### OS requirements
+
+the analysis was conducted and only tested for running on macOS Mojave (10.14.1) and Monterey (12.2.1).
+
+##### R dependencies
+
+
 
 ### data preprocessing and preparation
 #### fMRI data
+This was done in [Matlab_R2020b]()
 1. Preprocessing: results included in this paper come from preprocessing performed using fMRIPrep 20.2.3, details can be found [here](https://github.com/WilliamsPanLab/Ketamine-FEET-Mediation/blob/5d5a29331a3e20494244e72c544fee06472ac069/neuroimaging_preprocessing.md).
 
 2. Quality control: Quality control diagnostics included visual inspection of the raw fMRI timeseries for artifacts and signal dropout, and a review of the fMRIprep summary report for each participant. Participants’ data were excluded if more than 25% (37/148) of time points were detected as motion spikes. Volumes with frame-wise displacement >0.5 mm or std DVARS >1.5 are defined as motion spikes. One participant’s data for the 0.05 mg/kg was excluded. One participant was not able to complete brain scans due to nausea under the 0.5 mg/kg condition. One participant was unreachable after the completion of the first two scan visits (placebo and 0.5 mg/kg) and is missing the 0.05 mg/kg data. This resulted in n = 13, 11, and 12 for placebo, 0.05mg/kg and 0.5mg/kg conditions, respectively.
@@ -29,6 +44,7 @@ Addressing data missingness: for each subject’s questionnaire data under a cer
 
 ### data analysis
 #### fMRI Analysis of Variance (ANOVA)
+
 To examine our second objective to test the dose-dependent effects of ketamine on brain activity in response to emotional expressions, we conducted a one-way repeated Analysis of Variance in SPM — with dose as the within-participant factor — on the activation maps for threat faces (consisting of both anger and fear faces) relative to neutral faces, and happy faces relative to neutral faces. Based on the pre-specified primary focus of anterior insula and amygdala neural targets, we constrained our voxel-wise analysis using masks consisting of bilateral anterior insula and amygdala. Conducting within-region voxel-wise analyses instead of deriving an average value per region of interest (ROI) enabled us to focus on the ROIs while still obtaining precision in detecting which part within the region is showing an effect. The definition for ROIs of anterior insula and amygdala was established in our previous work. To correct for multiple comparisons, a voxel threshold of p < 0.001 and a Gaussian random field theory (GRF) family-wise error (FWE) cluster-level correction at p < 0.05 was applied. For clusters that survived multiple comparison corrections, we extracted the peak voxel activation (fMRI beta estimate) for all three conditions and conducted planned contrasts using paired t-tests between each pair of dose conditions, as we did with the ASC data.
 
 
