@@ -14,7 +14,7 @@ This repo contains steps to run mediation analysis between brain activation in r
   
 ### Pre-requisite
 #### Hardware requirements
-All stpes could be done on a standard research computer with reasonable CPUs and RAM. Except that the preprocessing was done on high performance cluster based on the recommendations from [fmriprep website](https://fmriprep.org/en/stable/faq.html#how-much-cpu-time-and-ram-should-i-allocate-for-a-typical-fmriprep-run).
+All stpes could be done on a standard research computer with reasonable CPUs and RAM. Except that the preprocessing was done on high performance cluster based on the recommendations from [fmriprep](https://fmriprep.org/en/stable/faq.html#how-much-cpu-time-and-ram-should-i-allocate-for-a-typical-fmriprep-run).
 
 #### Software requirements
 
@@ -23,9 +23,9 @@ All stpes could be done on a standard research computer with reasonable CPUs and
 the analysis was conducted and only tested for running on macOS Mojave (10.14.1) and Monterey (12.2.1).
 
 ##### Softwares
-- [Matlab_R2020b]() for neuroimaging analysis
-  -  Matlab dependencies: [SPM8](), 
-- R for non-neuroimaging analysis and mediation analysis
+- [Matlab_R2020b](https://www.mathworks.com/products/new_products/release2020b.html) for neuroimaging analysis
+  -  Matlab dependencies: [SPM8](https://www.fil.ion.ucl.ac.uk/spm/software/spm8/), 
+- [R version 4.0.5](https://www.r-project.org/) for non-neuroimaging analysis and mediation analysis
   - R dependencies: rio, ggplot2, lme4, tidyverse, sjPlot, coefplot2, performance, see, broom.mixed, kableExtra, janitor, ggeffects, dplyr, gridExtra, qqplotr, emmeans, pbkrtest, knitr,ggpubr, here, table1, psych, broom,lsr, rstatix, formatR, RVAideMemoire, labelled, cowplot, readr, svglite, rmcorr, cowplot, grid, gtable, RColorBrewer, extrafont, corrplot, grDevices,icesTAF, gganimate, lmerTest
 
 
@@ -53,7 +53,7 @@ To examine our second objective to test the dose-dependent effects of ketamine o
 
 
 #### Linear mixed model analysis for CADSS and 5D-ASC
-To examine dose-dependent effects of ketamine on CADSS-assessed subcomponents of dissociation and 5D-ASC-assessed other ASCs, we used linear mixed effects models (LMMs) with dose (placebo, 0.05mg/kg or 0.5mg/kg) as the fixed effect and participant as a random effect using the lmer package (https://cran.r-project.org/web/packages/lme4/index.html) in R version 4.0.5 (https://www.r-project.org/). Time and dose-by-time interaction were added if applicable (Suppl. Methods). Age and biological sex were included as covariates. We implemented an FDR correction to control for the testing of multiple scale sub-components. For significant dose-dependent effects, post-hoc paired t-tests were also run to compare 0.5 mg/kg versus placebo, 0.05 mg/kg versus placebo, and 0.5 mg/kg versus 0.05 mg/kg, to reveal which drug dose condition drove the effect.
+To examine dose-dependent effects of ketamine on CADSS-assessed subcomponents of dissociation and 5D-ASC-assessed other ASCs, we used linear mixed effects models (LMMs) with dose (placebo, 0.05mg/kg or 0.5mg/kg) as the fixed effect and participant as a random effect using the lmer package (https://cran.r-project.org/web/packages/lme4/index.html) in R. Time and dose-by-time interaction were added if applicable (Suppl. Methods). Age and biological sex were included as covariates. We implemented an FDR correction to control for the testing of multiple scale sub-components. For significant dose-dependent effects, post-hoc paired t-tests were also run to compare 0.5 mg/kg versus placebo, 0.05 mg/kg versus placebo, and 0.5 mg/kg versus 0.05 mg/kg, to reveal which drug dose condition drove the effect.
 
 
 #### Mediation analysis
