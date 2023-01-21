@@ -2,7 +2,10 @@
 
 This repo contains steps to run mediation analysis between brain activation in response to Facial Expressions of Emotion Task (FEET) and altered states of consciousness after acute ketamine administration.
 
-## High-level steps:
+## High-level steps
+[data preprocessing and preparation](###-data-preprocessing-and-preparation)
+
+
 ### data preprocessing and preparation
 #### fMRI data
 
