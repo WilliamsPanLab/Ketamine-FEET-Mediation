@@ -45,11 +45,16 @@ Quality control diagnostics included visual inspection of the raw fMRI timeserie
 
 
 #### CADSS and 5D-ASC
+
+(read_redcap_data.R)[https://github.com/WilliamsPanLab/Ketamine-FEET-Mediation/blob/fd145b7a7260efa2d74b24a0a4728ddf6321dd23/LME_mediation/R/read_redcap_data.R]
+
 Addressing data missingness: for each subject’s questionnaire data under a certain dose condition, if the missing items were fewer than 10% of the total item numbers of the questionnaire, we replaced missing items with the group mean of that dose condition. This brought the sample size of CADSS to be n = 13, n = 12, n = 13 for placebo, 0.05 mg/kg, and 0.5 mg/kg and of 5D-ASC to be n = 13 for all three drug visits.
 
 
 ### data analysis
+
 #### fMRI Analysis of Variance (ANOVA)
+
 [Task_repeated_ANOVA_spm.m](https://github.com/WilliamsPanLab/Ketamine-FEET-Mediation/blob/f125b3186f867c03f4dc09b90eae07e72044b225/fmri/Task_repeated_ANOVA_spm.m)
 
 To examine our second objective to test the dose-dependent effects of ketamine on brain activity in response to emotional expressions, we conducted a one-way repeated Analysis of Variance in SPM — with dose as the within-participant factor — on the activation maps for threat faces (consisting of both anger and fear faces) relative to neutral faces, and happy faces relative to neutral faces. Based on the pre-specified primary focus of anterior insula and amygdala neural targets, we constrained our voxel-wise analysis using masks consisting of bilateral anterior insula and amygdala. Conducting within-region voxel-wise analyses instead of deriving an average value per region of interest (ROI) enabled us to focus on the ROIs while still obtaining precision in detecting which part within the region is showing an effect. The definition for ROIs of anterior insula and amygdala was established in our previous work. To correct for multiple comparisons, a voxel threshold of p < 0.001 and a Gaussian random field theory (GRF) family-wise error (FWE) cluster-level correction at p < 0.05 was applied. 
@@ -58,12 +63,17 @@ To examine our second objective to test the dose-dependent effects of ketamine o
 
 #### Linear mixed model analysis for CADSS and 5D-ASC
 
+[P50_LME_visualization.Rmd](https://github.com/WilliamsPanLab/Ketamine-FEET-Mediation/blob/fd145b7a7260efa2d74b24a0a4728ddf6321dd23/LME_mediation/RMD/P50_LME_visualization.Rmd)
+
 To examine dose-dependent effects of ketamine on CADSS-assessed subcomponents of dissociation and 5D-ASC-assessed other ASCs, we used linear mixed effects models (LMMs) with dose (placebo, 0.05mg/kg or 0.5mg/kg) as the fixed effect and participant as a random effect using the lmer package (https://cran.r-project.org/web/packages/lme4/index.html) in R. Time and dose-by-time interaction were added if applicable (Suppl. Methods). Age and biological sex were included as covariates. We implemented an FDR correction to control for the testing of multiple scale sub-components. For significant dose-dependent effects, post-hoc paired t-tests were also run to compare 0.5 mg/kg versus placebo, 0.05 mg/kg versus placebo, and 0.5 mg/kg versus 0.05 mg/kg, to reveal which drug dose condition drove the effect. 
 
 For fMRI clusters that survived multiple comparison corrections, we extracted the peak voxel activation (fMRI beta estimate) for all three conditions and conducted planned contrasts using paired t-tests between each pair of dose conditions, as we did with the ASC data.
 
 
 #### Mediation analysis
+
+[P50_correlation_mediation.Rmd](https://github.com/WilliamsPanLab/Ketamine-FEET-Mediation/blob/fd145b7a7260efa2d74b24a0a4728ddf6321dd23/LME_mediation/RMD/P50_correlation_mediation.Rmd)
+
 To address our third objective — to test whether specific aspects of ketamine-induced dissociation and other ASCs mediate the effect of dose on acute changes in neural activity during emotional processing — we utilized the Averaged Causal Mediation Effect mediation model because it is powerful for understanding mechanisms of action with dose as the independent variable (0.5mg/kg versus placebo, the X variable), altered states as the mediators (the M variables), and the neural activity of the anterior insula and amygdala in response to emotional faces as the dependent variables (the Y variables). To test our working hypothesis that ketamine will reduce neural activity reflecting relief of negative affective states, mediators included depersonalization and derealization from the CADSS and blissful state from the 5D-ASC. To test our working hypothesis that ketamine will increase neural activity reflecting exacerbation of negative affective states, mediators included dissociative amnesia from the CADSS, as well as anxiety and impaired control and cognition from the 5D-ASC. Mediation models were implemented using the [mediation package](https://cran.r-project.org/web/packages/mediation/index.html) combined with the [lmer package](to add!!!).
 
 
