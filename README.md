@@ -4,13 +4,13 @@ This repo contains steps to run mediation analysis between brain activation in r
 
 ## High-level steps
 - [Pre-requisite](#pre-requisite)
-- [data preprocessing and preparation](###-data-preprocessing-and-preparation)
-  - [fMRI data](####-fmri-data)
-  - [CADSS and 5D-ASC](####-cadss-and-5d-asc)
-- [data analysis](###-data-analysis)
-  - [fMRI Analysis of Variance (ANOVA)](####-fmri-analysis-of-variance-(anova))
-  - [Linear mixed model analysis for CADSS and 5D-ASC](####-linear-mixed-model-analysis-for-cadss-and-5d-asc)
-  - [Mediation analysis](####-mediation-analysis)
+- [data preprocessing and preparation](#data-preprocessing-and-preparation)
+  - [fMRI data](#fmri-data)
+  - [CADSS and 5D-ASC](#cadss-and-5d-asc)
+- [data analysis](#data-analysis)
+  - [fMRI Analysis of Variance (ANOVA)](#fmri-analysis-of-variance-(anova))
+  - [Linear mixed model analysis for CADSS and 5D-ASC](#linear-mixed-model-analysis-for-cadss-and-5d-asc)
+  - [Mediation analysis](#mediation-analysis)
   
 ### Pre-requisite
 #### Hardware requirements
