@@ -1,0 +1,376 @@
+---
+title: "P50_LME_visualization"
+author: "Xue Zhang"
+date: "7/12/2022"
+output:
+  html_document: default
+  pdf_document: default
+  word_document: default
+always_allow_html: yes
+---
+
+
+### load envionment and packages and subfunctions
+```{r setup, include=FALSE}
+# use here from the here package
+here <- here::here
+
+# set up environment and load useful packages
+source(here('R', 'set_up_env.R'))
+
+# load functions for data manipulations
+source(here('R', 'data_manipulation.R'))
+
+# load functions for data visualization, including tables and figures
+source(here('R', 'visualization.R'))
+
+# load functions for folder manipulation
+source(here('R','folder_manipulation.R'))
+```
+
+
+### define data dir and create folders for output figures
+```{r define_folders}
+# data folder
+csvdir = "/Users/xuezhang/Documents/Stanford/Projects/P50/Analysis/CSV"
+
+# define and create figure folder
+Figuredir = here("Figures")
+Figsubdir = c("TIFF","PDF")
+Figsubsubdir = c("Boxplot", "OverallCorrelation", "RepeatedCorrelation")
+for (subdir in Figsubdir) {
+  for (subsubdir in Figsubsubdir) {
+    des_dir <- paste0(Figuredir, "/", subdir, "/", subsubdir)
+    create_folder_subfolder(des_dir)
+  }
+}
+
+```
+
+
+```{r define_parameters}
+# subjects
+subjn = 14 # sub num + 1
+subj_list = as.character(1:(subjn-1))
+subj_label = c(1:(subjn-1))
+
+# dosage information
+dosage_level <- c("Placebo", "0.05mg/kg", "0.5mg/kg")
+dosage_level_2ses <- c("Placebo", "0.5mg/kg")
+Dosage <- import(paste(csvdir,"/Ket_Dose_unblinded_demo.xlsx",sep = ""))
+
+# for plot
+xlabels_2time = c("Pre", "Post")
+
+# figure related parameters
+mycolor <- colorRampPalette(brewer.pal(name="Set1", n = 9))(length(subj_label))
+dosecolor <- c('#B5B5B5', '#FFAD65', '#C53600')
+
+xtitle_size = 4
+title_size = 7
+legend_title_size = 9
+xlabel_size = 7
+
+```
+
+
+# read questionnaire data (CADSS and 5D-ASC) and FEET activation data from amygdala and anterior insula
+```{r read data}
+source(here('R', 'read_redcap_data.R'))
+source(here('R', 'read_fmri_data.R'))
+```
+
+
+### LME for CADSS: y ~ Time*Dosage + Age + Gender + (1|Subjects) 
+```{r fig.width=8,fig.height=4, fig.align='center',comment= NA, message=FALSE, tidy = TRUE, results='asis',warning=FALSE}
+desired_columns = c("Subjects", "Time", "CADSS", "CADSS_depersonalization", "CADSS_derealization", "CADSS_amnesia", "Dosage", "Age", "Gender")
+
+data_fortest <- merge(data_repeated_pervisit, age_gender, by = c("Subjects"), all=TRUE)
+
+data_fortest <- data_fortest %>%
+  select(desired_columns) %>%
+  pivot_longer(-c(Subjects, Time, Dosage, Age, Gender), names_to = "variables", values_to = "value") %>%
+  mutate(variables = factor(variables, levels = c("CADSS", "CADSS_depersonalization", "CADSS_derealization", "CADSS_amnesia")))
+
+formula <-  as.formula(paste("value ~ Time*Dosage + Age + Gender + (1|Subjects)", sep = ""))
+
+data_fortest %>%
+split(.$variables) %>%
+  map(~anova(lmer(formula,data = ., REML = FALSE), type = 'marginal')) %>%
+  tibble(
+    dvsub = names(.),
+    untidied = .
+    ) %>%
+  mutate(tidy = map(untidied, broom::tidy)) %>%
+  unnest(tidy) %>%
+  select(-untidied) %>%
+  adjust_pvalue(method = "fdr")%>%
+  add_significance() %>%
+  select(dvsub, term, NumDF,DenDF, statistic, p.value, p.value.adj, p.value.adj.signif) %>%
+  kbl(caption = "ANOVA Marginal") %>%
+  kable_classic(full_width = F, html_font = "Arial", font_size = 10)
+
+```
+
+
+### LME for 5D-ASC: y ~ Dosage + Age + Gender + (1|Subjects) 
+```{r fig.width=2,fig.height=2, fig.align='center',comment= NA, message=FALSE, tidy = TRUE, results='asis',warning=FALSE}
+data_fortest <- data_once_pervisit %>%
+  select(Subjects, Dosage, dascscore_anxiety, dascscore_bliss, dascscore_impair) %>%
+  pivot_longer(-c(Subjects, Dosage), names_to = "variables", values_to = "value") %>%
+      mutate(Dosage = factor(Dosage, levels = dosage_level))
+
+stat.test <- data_fortest %>%
+  group_by(variables) %>%
+  t_test(value ~ Dosage, paired = TRUE) %>% #
+  add_significance(.,"p","p.signif")%>%
+  add_xy_position(x = "Dosage", scales = "free") 
+
+t_test_table <- stat.test %>%
+  select(colnames(.)[c(-2, -5:-6, -10:-11, -13:-16)]) %>%
+  mutate(group = paste0(group1,' vs ',  group2, sep= "")) %>%
+  select(-group1, -group2) %>%
+  pivot_wider(names_from = group, values_from = c(statistic, df, p)) %>%
+  kbl(caption = "post-hoc t test") %>%
+  kable_classic(full_width = F, html_font = "Arial", font_size = 10)
+
+
+# Generate statistics
+
+data_fortest <- merge(data_once_pervisit, age_gender, by = c("Subjects"), all=TRUE)
+data_fortest <- data_fortest %>%
+  select(Subjects, Dosage, Age, Gender, matches("dasc")) %>%
+  pivot_longer(-c(Subjects, Dosage, Age, Gender), names_to = "variables", values_to = "value")
+
+formula <-  as.formula(paste("value ~ Dosage + Gender + Age + (1|Subjects)", sep = ""))
+
+data_fortest %>%
+split(.$variables) %>%
+  map(~anova(lmer(formula,data = ., REML = FALSE)), type = 'marginal') %>%
+  tibble(
+    dvsub = names(.),
+    untidied = .
+    ) %>%
+  mutate(tidy = map(untidied, broom::tidy)) %>%
+  unnest(tidy) %>%
+  select(-untidied) %>%
+  adjust_pvalue(method = "fdr")%>%
+  add_significance(.,"p.value.adj","p.value.adj.signif") %>%
+  select(dvsub, term, NumDF,DenDF, statistic, p.value, p.value.adj, p.value.adj.signif) %>%
+  kbl(caption = "ANOVA Marginal") %>%
+  kable_classic(full_width = F, html_font = "Arial", font_size = 10)
+```
+
+# create column plot for CADSS, 5D-ASC and FEET activations in paper
+```{r fig.width=2,fig.height=2, fig.align='center',comment= NA, message=FALSE, tidy = TRUE, results='asis',warning=FALSE}
+# combine all CADSS and 5D-ASC subcomponents of all three visits
+non_brain_data_post_pre <- Reduce(function(x, y) merge(x, y, by = c("Subjects", "Dosage"), all=TRUE), list(data_repeated_post_pre, data_once_pervisit))
+
+data_fortest <- non_brain_data_post_pre %>%
+  select(Subjects, Dosage, CADSS_depersonalization_post_pre, CADSS_derealization_post_pre, CADSS_amnesia_post_pre, dascscore_anxiety, dascscore_bliss,dascscore_impair) %>%
+  pivot_longer(-c(Subjects, Dosage), names_to = "variables", values_to = "value") %>%
+      mutate(Dosage = factor(Dosage, levels = dosage_level))
+
+# by subject by variable
+plot_variables <- unique(data_fortest$variables)
+
+plot_titles <- unique(data_fortest$variables)
+figure_width = 0.7
+figure_height = 1.2
+boxplot_width = 0.4/figure_width
+colors_network =  c("#E5BBD8", "#E5BBD8", "#ffc100", "#E5BBD8", "#ffc100", "#ffc100", "#ffc100")
+xlabel_text = c("Placebo","0.05mg/kg","0.5mg/kg")
+# xlabel_text = c("Placebo","0.5mg/kg")
+for (ivar in 1:length(plot_variables)) {
+  # generate paired t-test significance between any two of the three drug conditions
+  stat.test <- data_fortest %>%
+  filter(variables == plot_variables[ivar]) %>%
+  group_by(variables) %>%
+  t_test(value ~ Dosage, paired = TRUE) %>%
+  add_significance(.,"p","p.signif")%>%
+  add_xy_position(x = "Dosage", scales = "free")%>%
+  filter(p < 0.05)
+  
+  # summarize mean and sd
+  data_fortest_sta <- data_fortest %>%
+    filter(variables == plot_variables[ivar]) %>%
+    group_by(Dosage) %>%
+    summarise(
+      count = sum(!is.na(value)),
+      sd = sd(value, na.rm = TRUE),
+      se = sd / sqrt(count),
+      avg = mean(value, na.rm = TRUE))
+  
+  ylim_max <- max(data_fortest_sta$avg) + 1.2 * max(data_fortest_sta$se)
+  ylim_min <- min(data_fortest_sta$avg) - 1.2 * max(data_fortest_sta$se)
+  
+  if (ylim_min < 0 & min(data_fortest_sta$avg)>= 0) {
+    ylim_min = 0
+    
+  }
+
+  colors_network_plot <- c(colors_network[ivar], colors_network[ivar], colors_network[ivar])
+  
+  
+  
+      myplot <- data_fortest_sta %>%
+        ggplot(aes(x = Dosage, y = avg)) +
+        geom_col(aes(group = Dosage, fill = Dosage), alpha = 1, size = 0.25) +
+        geom_errorbar(aes(group = Dosage, color = Dosage, ymin = avg-se, ymax = avg+se), width = 0, size = 0.25) + scale_y_continuous(name="", limits=c(ylim_min, ylim_max), breaks = seq(round(ylim_min) ,round(ylim_max), by = floor((ylim_max - ylim_min)/4)), expand = c(0, 0)) + scale_x_discrete(breaks = waiver(), labels = xlabel_text) + theme_classic() + theme(axis.ticks = element_line(size = 0.2), axis.line = element_line(size = 0.2),
+    axis.text.x = element_text(size = 9), 
+        axis.title.y=element_blank(),
+        strip.text.x = element_text(size = 8, colour = "black"),
+        panel.margin = unit(0.25, "lines"), legend.position="bottom", legend.margin=margin(t=-10),
+        legend.spacing.y = unit(-0.05, 'cm')) + scale_colour_manual(values = colors_network_plot) + scale_fill_manual(values = colors_network_plot)+ guides(color = guide_legend(override.aes= list(alpha = 0.5))) + guides(col = guide_legend(nrow = 1))
+      
+        
+      
+      if (ylim_min <= 0) {
+        myplot <- myplot + geom_hline(yintercept = 0, size = 0.1)
+      }
+  
+  figure_width = 1.3
+  xtitle_size = 6
+  title_size = 6
+  legend_title_size = 3
+  myplot <- add_theme(myplot, xtitle_size, title_size, legend_title_size)
+  myplot <- myplot+scale_colour_manual(values = colors_network_plot) + scale_fill_manual(values = colors_network_plot)
+  leg <- get_legend(myplot)
+plot_leg <- as_ggplot(leg)
+  myplot <- myplot + theme(legend.position = "off")
+
+  # TIFF
+  ggsave(file=paste(Figuredir, "/TIFF/Boxplot/", plot_variables[ivar],"_col.TIFF", sep = ""), plot=myplot, width=figure_width, height=1.2, dpi = 300)
+  # PDF
+  ggsave(file=paste(Figuredir, "/PDF/Boxplot/", plot_variables[ivar],"_col.PDF", sep = ""),  device = cairo_pdf, plot=myplot, width=figure_width, height=1.2, dpi = 300)
+}
+
+```
+
+### LME for FEET task activations: y ~ Dosage + Age + Gender + (1|Subjects)
+### and column plot visualization
+```{r fig.width=8,fig.height=6, fig.align='center',comment= NA, message=FALSE, tidy = TRUE, results='asis',warning=FALSE}
+
+task_name <- unique(Faces_data$Task)
+con_name <- unique(Faces_data$Contrast)
+
+for (i_task in task_name) {
+  for (i_con in con_name) {
+    print(paste0("Task: ", i_task,"; Contrast: ", i_con,"\n"))
+    
+    data_fortest <- Faces_data %>%
+      filter(Task == i_task, Contrast == i_con) %>%
+      pivot_longer(-c(Subjects, Dosage, Task, Contrast), names_to = "variables", values_to = "value")
+    
+    stat.test <- data_fortest %>%
+      group_by(variables) %>%
+      t_test(value ~ Dosage, paired = TRUE) %>% # 
+      add_significance(.,"p","p.signif")
+    
+    t_test_table <- stat.test %>%
+  select(colnames(.)[c(-2, -5:-6, -10:-11, -13:-16)]) %>%
+  mutate(group = paste0(group1,' vs ',  group2, sep= "")) %>%
+  select(-group1, -group2) %>%
+  pivot_wider(names_from = group, values_from = c(statistic, df, p, p.signif)) %>%
+  kbl(caption = "post-hoc t test") %>%
+  kable_classic(full_width = F, html_font = "Arial", font_size = 10)
+  
+    # run LME and generate statistics
+    rois = unique(data_fortest$variables)
+    formula <-  as.formula(paste("value ~ Dosage + (1|Subjects)", sep = ""))
+    print(data_fortest %>%
+            filter(variables %in% rois) %>% 
+            split(.$variables) %>%
+            map(~anova(lmer(formula,data = ., REML = FALSE)), type = 'marginal') %>%
+            tibble(
+              dvsub = names(.),
+              untidied = .
+            ) %>%
+            mutate(tidy = map(untidied, broom::tidy)) %>%
+            unnest(tidy) %>%
+            select(-untidied) %>%
+            adjust_pvalue(method = "fdr")%>%
+            add_significance() %>%
+            select(dvsub, NumDF,DenDF, statistic, p.value, p.value.adj) %>%
+            kbl(caption = "ANOVA Marginal") %>%
+            kable_classic(full_width = F, html_font = "Arial", font_size = 10))
+    
+   
+   # generate column plots 
+    plot_variables <- rois
+    plot_titles <- c("antInsula R", "Amygdala R")
+    figure_width = 0.7
+    figure_height = 1.2
+    boxplot_width = 0.4/figure_width
+    xlabel_text = c("Placebo","0.05mg/kg","0.5mg/kg")
+    colors_network =  c("#46B674", "#D77842")
+    
+    
+    for (ivar in 1:length(plot_variables)) {
+      
+      # generate significance
+      stat.test <- data_fortest %>%
+        filter(variables == plot_variables[ivar]) %>%
+        group_by(variables) %>%
+        t_test(value ~ Dosage, paired = TRUE) %>%
+        add_significance(.,"p","p.signif")%>%
+        add_xy_position(x = "Dosage", scales = "free")%>%
+        filter(p < 0.05)
+      
+      subjN = length(unique(data_fortest$Subjects))
+      
+      # summarize mean and sd
+      data_fortest_sta <- data_fortest %>%
+        filter(variables == plot_variables[ivar]) %>%
+        group_by(Dosage) %>%
+        summarise(
+          count = sum(!is.na(value)),
+          sd = sd(value, na.rm = TRUE),
+          se = sd / sqrt(count),
+          avg = mean(value, na.rm = TRUE))
+      
+      
+      
+      
+      ylim_max <- max(data_fortest_sta$avg) + 1.1 * max(data_fortest_sta$se)
+  ylim_min <- min(data_fortest_sta$avg) - 1.1 * max(data_fortest_sta$se)
+      
+  colors_network_plot <- c(colors_network[ivar], colors_network[ivar], colors_network[ivar])
+  
+     myplot <- data_fortest_sta %>%
+        ggplot(aes(x = Dosage, y = avg)) +
+        geom_col(aes(group = Dosage, fill = Dosage), alpha = 1, size = 0.25) +
+        geom_errorbar(aes(group = Dosage, color = Dosage, ymin = avg-se, ymax = avg+se), width = 0, size = 0.25) + guides(color = guide_legend(override.aes= list(alpha = 0.5))) + scale_x_discrete(breaks = waiver(), labels = xlabel_text) + scale_y_continuous(name="Size of effect", limits=c(-0.3, 0.75), breaks = c(-0.25, 0, 0.25, 0.5, 0.75), expand = c(0, 0)) + theme_classic() + theme(axis.ticks = element_line(size = 0.2), axis.line = element_line(size = 0.2),
+    axis.text.x = element_text(size = 9), 
+        axis.title.y=element_blank(),
+        strip.text.x = element_text(size = 8, colour = "black"),
+        panel.margin = unit(0.25, "lines"), legend.position="bottom", legend.margin=margin(t=-10),
+        legend.spacing.y = unit(-0.05, 'cm')) + scale_colour_manual(values = colors_network_plot) + scale_fill_manual(values = colors_network_plot) + guides(color = guide_legend(override.aes= list(alpha = 0.5))) + guides(col = guide_legend(nrow = 1)) 
+      if (ylim_min < 0) {
+      myplot <- myplot + geom_hline(yintercept = 0, size = 0.1)
+      }
+      
+      xtitle_size = 6
+      title_size = 6
+      legend_title_size = 3
+      myplot <- add_theme(myplot, xtitle_size, title_size, legend_title_size)
+      myplot <- myplot+scale_colour_manual(values = colors_network_plot) + scale_fill_manual(values = colors_network_plot)
+      leg <- get_legend(myplot)
+      plot_leg <- as_ggplot(leg)
+      myplot <- myplot + theme(legend.position = "off")
+      # TIFF
+      figure_width = 1.3
+      ggsave(file=paste(Figuredir, "/TIFF/Boxplot/",i_task, "_",i_con, "_", plot_variables[ivar],"_col_trial.TIFF", sep = ""), plot=myplot, width=figure_width, height=1.4, dpi = 1000)
+      # ggsave(file=paste(Figuredir, "/PDF/Boxplot/", i_task, "_",i_con, "_", plot_variables[ivar],"_legend_col.pdf", sep = ""), device = cairo_pdf, plot=plot_leg, width=figure_width*2, height=1.2, dpi = 300)
+      # PDF
+      ggsave(file=paste(Figuredir, "/PDF/Boxplot/", i_task, "_",i_con, "_", plot_variables[ivar],"_col_trial.PDF", sep = ""),  device = cairo_pdf, plot=myplot, width=figure_width, height=1.2, dpi = 1000)
+ 
+    }
+
+    
+  }
+  
+}
+
+```
+
