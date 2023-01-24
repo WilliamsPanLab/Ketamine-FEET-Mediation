@@ -2,42 +2,43 @@
 
 This repo contains steps to run mediation analysis between brain activation in response to Facial Expressions of Emotion Task (FEET) and altered states of consciousness after acute ketamine administration.
 
-## High-level steps
+# High-level steps
 - [Pre-requisite](#pre-requisite)
 - [Installation guide](#Installation-guide)
 - [Run code with demo data in R](#Run-code-with-demo-data-in-R)
-- [data preprocessing and preparation](#data-preprocessing-and-preparation)
-  - [fMRI data](#fmri-data)
-  - [CADSS and 5D-ASC](#cadss-and-5d-asc)
-- [data analysis](#data-analysis)
-  - [fMRI Analysis of Variance (ANOVA)](#fmri-analysis-of-variance-(anova))
-  - [Linear mixed model analysis for CADSS and 5D-ASC](#linear-mixed-model-analysis-for-cadss-and-5d-asc)
-  - [Mediation analysis](#mediation-analysis)
-  
-### Pre-requisite
-#### Hardware requirements
+- [Documentation for methods and corresponding scripts](#Documentation-for-methods-and-corresponding-scripts)
+  - [data preprocessing and preparation](#data-preprocessing-and-preparation)
+    - [fMRI data](#fmri-data)
+    - [CADSS and 5D-ASC](#cadss-and-5d-asc)
+  - [data analysis](#data-analysis)
+    - [fMRI Analysis of Variance (ANOVA)](#fmri-analysis-of-variance-(anova))
+    - [Linear mixed model analysis for CADSS and 5D-ASC](#linear-mixed-model-analysis-for-cadss-and-5d-asc)
+    - [Mediation analysis](#mediation-analysis)
+
+## Pre-requisite
+### Hardware requirements
 All stpes could be done on a standard research computer with reasonable CPUs and RAM. Except that the preprocessing was done on high performance cluster based on the recommendations from [fmriprep](https://fmriprep.org/en/stable/faq.html#how-much-cpu-time-and-ram-should-i-allocate-for-a-typical-fmriprep-run).
 
-#### Software requirements
+### Software requirements
 
-##### OS requirements
+#### OS requirements
 
 the analysis was conducted and only tested for running on macOS Mojave (10.14.1) and Monterey (12.2.1).
 
-##### Software
+#### Software
 - [Matlab_R2020b](https://www.mathworks.com/products/new_products/release2020b.html) for neuroimaging analysis
   -  Matlab dependencies: [SPM8](https://www.fil.ion.ucl.ac.uk/spm/software/spm8/), [DPABI V6.0_210501](http://rfmri.org/content/dpabi-v60-and-dpabinet-v10-were-released).
 - [R version 4.0.5](https://www.r-project.org/) for non-neuroimaging analysis and mediation analysis
   - R dependencies: rio, ggplot2, lme4, tidyverse, sjPlot, coefplot2, performance, see, broom.mixed, kableExtra, janitor, ggeffects, dplyr, gridExtra, qqplotr, emmeans, pbkrtest, knitr,ggpubr, here, table1, psych, broom,lsr, rstatix, formatR, RVAideMemoire, labelled, cowplot, readr, svglite, rmcorr, cowplot, grid, gtable, RColorBrewer, extrafont, corrplot, grDevices,icesTAF, gganimate, lmerTest
 
-### Installation guide
+## Installation guide
   ```
   cd ${where_you_would_like_to_save_the_code}
   git clone https://github.com/WilliamsPanLab/Ketamine-FEET-Mediation
   ```
   Demo data has been provided in `Ketamine-FEET-Mediation/LME_mediation/csv` for running the analysis in R.
 
-### Run code with demo data in R
+## Run code with demo data in R
 
   1. We recommend to use [Rstudio](https://support--rstudio-com.netlify.app/products/rstudio/download/) to open `Ketamine-FEET-Mediation/LME_mediation/FEET_CADSS_5DASC_Analysis.Rproj`   
   
@@ -47,7 +48,7 @@ the analysis was conducted and only tested for running on macOS Mojave (10.14.1)
 
   If preferred, scripts in Step 2 and 3 could also be `Run` in Rstudio instead of `Knit`. Please note the data was simulated so the results generated from these scripts won't match the manuscript.
   
-  
+## Documentation for methods and corresponding scripts  
 ### data preprocessing and preparation
 #### fMRI data
 1. Preprocessing: [fmriprep-20.2.3.job](https://github.com/WilliamsPanLab/Ketamine-FEET-Mediation/blob/b1ee4f796c71b1707de6bc68edbf99c3c6c7ff38/fmri/Preprocessing/fmriprep-20.2.3.job)
