@@ -32,7 +32,6 @@ the analysis was conducted and only tested for running on macOS Mojave (10.14.1)
   ```
   cd ${where_you_would_like_to_save_the_code}
   git clone https://github.com/WilliamsPanLab/Ketamine-FEET-Mediation
-  
   ```
   Demo data has been provided in `Ketamine-FEET-Mediation/demo` for running the analysis in R.
   
