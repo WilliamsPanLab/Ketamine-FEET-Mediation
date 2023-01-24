@@ -4,6 +4,8 @@ This repo contains steps to run mediation analysis between brain activation in r
 
 ## High-level steps
 - [Pre-requisite](#pre-requisite)
+- [Installation guide](#Installation-guide)
+- [Run code with demo data in R](#Run-code-with-demo-data-in-R)
 - [data preprocessing and preparation](#data-preprocessing-and-preparation)
   - [fMRI data](#fmri-data)
   - [CADSS and 5D-ASC](#cadss-and-5d-asc)
@@ -33,7 +35,18 @@ the analysis was conducted and only tested for running on macOS Mojave (10.14.1)
   cd ${where_you_would_like_to_save_the_code}
   git clone https://github.com/WilliamsPanLab/Ketamine-FEET-Mediation
   ```
-  Demo data has been provided in `Ketamine-FEET-Mediation/demo` for running the analysis in R.
+  Demo data has been provided in `Ketamine-FEET-Mediation/LME_mediation/csv` for running the analysis in R.
+
+### Run code with demo data in R
+
+  1. We recommend to use [Rstudio](https://support--rstudio-com.netlify.app/products/rstudio/download/) to open `Ketamine-FEET-Mediation/LME_mediation/FEET_CADSS_5DASC_Analysis.Rproj`   
+  
+  2. Open `Ketamine-FEET-Mediation/LME_mediation/RMD/P50_LME_visualization.Rmd` and press `Knit` in Rstudio to generate .html results report. The results should be comparable to `LME_mediation/Results/P50_correlation_mediation.html`
+  
+  3. Open `Ketamine-FEET-Mediation/LME_mediation/RMD/P50_correlation_mediation.Rmd` and press `Knit` in Rstudio to generate .html results report. The results should be comparable to `LME_mediation/Results/P50_correlation_mediation.html`
+
+  If preferred, scripts in Step 2 and 3 could also be `Run` in Rstudio instead of `Knit`. Please note the data was simulated so the results generated from these scripts won't match the manuscript.
+  
   
 ### data preprocessing and preparation
 #### fMRI data
