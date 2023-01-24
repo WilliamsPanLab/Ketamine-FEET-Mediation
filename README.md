@@ -28,7 +28,14 @@ the analysis was conducted and only tested for running on macOS Mojave (10.14.1)
 - [R version 4.0.5](https://www.r-project.org/) for non-neuroimaging analysis and mediation analysis
   - R dependencies: rio, ggplot2, lme4, tidyverse, sjPlot, coefplot2, performance, see, broom.mixed, kableExtra, janitor, ggeffects, dplyr, gridExtra, qqplotr, emmeans, pbkrtest, knitr,ggpubr, here, table1, psych, broom,lsr, rstatix, formatR, RVAideMemoire, labelled, cowplot, readr, svglite, rmcorr, cowplot, grid, gtable, RColorBrewer, extrafont, corrplot, grDevices,icesTAF, gganimate, lmerTest
 
-
+### Installation guide
+  ```
+  cd ${where_you_would_like_to_save_the_code}
+  git clone https://github.com/WilliamsPanLab/Ketamine-FEET-Mediation
+  
+  ```
+  Demo data has been provided in `Ketamine-FEET-Mediation/demo` for running the analysis in R.
+  
 ### data preprocessing and preparation
 #### fMRI data
 1. Preprocessing: [fmriprep-20.2.3.job](https://github.com/WilliamsPanLab/Ketamine-FEET-Mediation/blob/b1ee4f796c71b1707de6bc68edbf99c3c6c7ff38/fmri/Preprocessing/fmriprep-20.2.3.job)
