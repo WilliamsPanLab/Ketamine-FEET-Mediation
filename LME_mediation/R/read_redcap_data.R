@@ -2,8 +2,8 @@
 ############ load in raw CADSS and 5d-ASC scores
 questionnaire_csv <-import(file = paste(csvdir,"/KET_CADSS_ASC_demo.csv",sep = ""))
 
-############ load age and gender
-age_gender <- import(file = paste(csvdir,"/KET_age_gender_demo.csv",sep = ""))
+############ load age and Sex
+age_Sex <- import(file = paste(csvdir,"/KET_age_sex_demo.csv",sep = ""))
 
 
 ############ read 5D-ASC and replace missingness
@@ -112,3 +112,6 @@ data_repeated_post_pre <- data_repeated_pervisit %>%
   ungroup() %>%
   filter(Time == "Post-infusion") %>%
   select(Subjects, Dosage, CADSS_post_pre, CADSS_depersonalization_post_pre, CADSS_derealization_post_pre, CADSS_amnesia_post_pre)
+
+data_repeated_post_pre <- merge(data_repeated_post_pre, Dosage, by = c("Subjects","Dosage"), all=TRUE) %>%
+  select(-Visit)

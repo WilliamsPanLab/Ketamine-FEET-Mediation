@@ -19,30 +19,12 @@ source(here('R', 'data_manipulation.R'))
 # load functions for data visualization, including tables and figures
 source(here('R', 'visualization.R'))
 
-# load functions for folder manipulation
-source(here('R','folder_manipulation.R'))
 ```
 
-### define data dir and create folders for output figures
-```{r define_folders}
+
+```{r define_parameters, warning=FALSE}
 # data folder
-csvdir = "/Users/xuezhang/Documents/Stanford/Projects/P50/Analysis/CSV"
-
-# define and create figure folder
-Figuredir = here("Figures")
-Figsubdir = c("TIFF","PDF")
-Figsubsubdir = c("Boxplot", "RepeatedCorrelation")
-for (subdir in Figsubdir) {
-  for (subsubdir in Figsubsubdir) {
-    des_dir <- paste0(Figuredir, "/", subdir, "/", subsubdir)
-    create_folder_subfolder(des_dir)
-  }
-}
-
-```
-
-
-```{r define_parameters}
+csvdir = csvdir = here('csv')
 # subjects
 subjn = 14 # sub num + 1
 subj_list = as.character(1:(subjn-1))
@@ -67,18 +49,17 @@ xtitle_size = 4
 title_size = 7
 legend_title_size = 9
 xlabel_size = 7
-
+options(contrasts = c("contr.sum","contr.poly"))
 ```
 
 # read questionnaire data (CADSS and 5D-ASC) and FEET activation data from amygdala and anterior insula
-```{r read data}
+```{r read data, warning=FALSE, message = FALSE}
 source(here('R', 'read_redcap_data.R'))
 source(here('R', 'read_fmri_data.R'))
 ```
 
-# mediation models
-```{r}
-options(contrasts = c("contr.sum","contr.poly"))
+### conduct mediation analysis with: x = Dosage, mediator = subcomponents of ASC, y = insula activations
+```{r fig.width=2,fig.height=2, fig.align='center',comment= NA, message=FALSE, tidy = TRUE, results='asis',warning=FALSE}
 # combine all CADSS and 5D-ASC subcomponents of all three visits
 non_brain_data_post_pre <- Reduce(function(x, y) merge(x, y, by = c("Subjects", "Dosage"), all=TRUE), list(data_repeated_post_pre, data_once_pervisit))
 ### combine non-neuroimaging and neuroimaging data
@@ -93,16 +74,154 @@ colnames(Faces_data_contrast)[-1:-2] <- paste("noncon_TvN", original_cols,sep="_
 all_data <- Reduce(function(x, y) merge(x, y, by = c("Subjects", "Dosage"), all=TRUE), list(non_brain_data_post_pre, Faces_data_contrast)) %>%
   filter(!(Dosage %in% c('0.05mg/kg', 'Baseline')))
 
-all_data_forcorr <- all_data %>%
-  select(Subjects, Dosage, CADSS_depersonalization_post_pre, CADSS_derealization_post_pre, dascscore_bliss, CADSS_amnesia_post_pre, dascscore_anxiety, matches('Insula'))
-
-stat.test_cohen <- all_data_forcorr %>%
-  pivot_longer(-c(Subjects, Dosage), names_to = "variables", values_to = "value") %>%
-  group_by(variables) %>%
-  cohens_d(value ~ Dosage, paired = TRUE) %>%
-  kbl(caption = "Cohen's d") %>%
-  kable_classic(full_width = F, html_font = "Arial", font_size = 10)
+# mediators
+mediators <- colnames(all_data)[4:9]
+dvs <- colnames(all_data)[c(10)] # insula activation
+df_total = data.frame()
+detach("package:lmerTest", unload=TRUE)
+detach("package:dplyr", unload=TRUE)
+library(mediation, dplyr)
+for (imed in 1: length(mediators)) {
+  mediator <- mediators[imed]
+  for (idv in 1:length(dvs)) {
+    dv <- dvs[idv]
+    test_data <- all_data %>%
+      dplyr::select(c('Subjects', 'Dosage', dv, mediator)) %>%
+      na.omit() 
     
+    b <- test_data %>%
+      ggplot(aes_string(x = dv, y = mediator)) + geom_point(aes(color = Dosage),size = 1, alpha=1)
+
+    # z score across all conditions
+    test_data <- test_data %>%
+      dplyr::mutate_at(colnames(test_data)[3:4], ~(scale(as.numeric(.), center = TRUE, scale = TRUE) %>% as.vector))
+        
+    # within subject demean
+    test_data <- test_data %>%
+      group_by(Subjects) %>%
+      dplyr::mutate_at(colnames(test_data)[3:4], ~(scale(as.numeric(.), center = TRUE, scale = FALSE) %>% as.vector))
+    
+    # iv -> dv
+    formula_totaleffect <- as.formula(paste(dv, " ~ Dosage + (1|Subjects)"))
+    model_totaleffect <- lmer(formula_totaleffect, data = test_data, REML = FALSE)
+    anova(model_totaleffect,type = 'marginal')
+    
+    # iv -> mediator
+    formula_mediator <- as.formula(paste(mediator, " ~ Dosage + (1|Subjects)"))
+    model_mediator <- lmer(formula_mediator, data = test_data, REML = FALSE)
+    anova(model_mediator,type = 'marginal')
+    
+    # {iv, mediator} -> dv
+    formula_dv <- as.formula(paste(dv, " ~ " , mediator, " + Dosage + (1|Subjects)"))
+    model_dv <- lmer(formula_dv, data = test_data, REML = FALSE)
+    anova(model_dv,type = 'marginal')
+    
+    # mediation model
+    mediatorModel <- mediate(model_mediator, model_dv, treat='Dosage', control.value = "Placebo", treat.value = "0.5mg/kg", mediator=mediator)
+    a <- summary(mediatorModel) 
+    
+    if (a$d0.p < 1) { # was 0.05 for the paper
+      model <- cbind(mediator, dv, a$d0, a$d0.ci[1], a$d0.ci[2], a$d0.p, a$z0, a$tau.coef, fixef(model_mediator)[2], fixef(model_dv)[2])
+      df_total <- rbind(df_total,model)
+ 
+    }
+ 
+  }
+  
+}
+if (length(df_total) > 0) {
+  colnames(df_total) <- c('mediator', 'dependent variable', 'ACME', 'upper CI', 'lower CI','p','direct','total','iv-med','med-dv')
+  rownames(df_total) <- NULL
+  # create a summary table for mediation analysis
+  df_total %>%
+    kbl(caption = "Mediation summary - Fig. 1d, 2d and 3d") %>%
+    kable_classic(full_width = F, html_font = "Arial", font_size = 10)
+}
+
+
+
+```
+
+# visualization of high ASC vs. low ASC - just one example for Fig. 1e, 2e and 3e
+```{r fig.width=2,fig.height=2, fig.align='center',comment= NA, message=FALSE, tidy = TRUE, results='asis',warning=FALSE}
+all_data <- Reduce(function(x, y) merge(x, y, by = c("Subjects", "Dosage"), all=TRUE), list(non_brain_data_post_pre, Faces_data_contrast)) %>%
+  filter(Dosage != '0.05mg/kg')
+
+# mediators
+mediators <- colnames(all_data)[c(4:9)]
+# dependent variable
+dvs <- colnames(all_data)[c(10)]
+
+
+imed = 1 # change to visualize different mediator
+mediator <- mediators[imed]
+idv = 1
+dv <- dvs[idv]
+
+test_data <- all_data %>%
+  dplyr::select(c('Subjects', 'Dosage', dv, mediator)) %>%
+  na.omit() 
+
+# get values for high and low dissociators
+highdose <- test_data$Dosage == "0.5mg/kg"
+subject_highdose <- test_data$Subjects[highdose]
+cadss_highdose <- test_data %>%
+  filter(highdose) %>%
+  dplyr::select(mediator)
+
+disso_median <- cadss_highdose %>%
+  dplyr::summarise(median = median(get(mediator), na.rm = TRUE))
+
+disso_median <- disso_median$median
+
+subject_highdisso <- subject_highdose[cadss_highdose > disso_median] 
+subject_lowdisso <- subject_highdose[cadss_highdose <= disso_median]
+
+test_data <- test_data %>%
+  dplyr::mutate(high_disso = dplyr::case_when(Subjects %in% subject_highdisso ~ "high ASC", Subjects %in% subject_lowdisso ~ "low ASC")) %>%
+  dplyr::mutate(high_disso = factor(high_disso, levels = c("high ASC", "low ASC"))) %>%
+  dplyr::mutate(noncon_TvN_Right_antInsula_peak_nonconscious = as.numeric(noncon_TvN_Right_antInsula_peak_nonconscious)) %>%
+  filter(Dosage == "0.5mg/kg") %>%
+  na.omit() 
+
+# summarize mean and sd
+
+data_fortest_sta <- test_data %>%
+  group_by(high_disso) %>%
+  dplyr::summarise(
+    count = sum(!is.na(noncon_TvN_Right_antInsula_peak_nonconscious)),
+    sd = sd(noncon_TvN_Right_antInsula_peak_nonconscious, na.rm = TRUE),
+    se = sd / sqrt(count),
+    avg = mean(noncon_TvN_Right_antInsula_peak_nonconscious, na.rm = TRUE))
+
+colors_network_plot <- c("#A2DAB9", "#1E8E4C")
+xlabel_text = c("low", "high")
+
+myplot <- data_fortest_sta %>%
+  ggplot(aes(x = high_disso, y = avg)) +
+  geom_col(aes(fill = high_disso), alpha = 1, size = 0.25, position=position_dodge()) +
+  geom_errorbar(aes(color = high_disso, ymin = avg-se, ymax = avg+se), width = 0, size = 0.25, position=position_dodge(.9)) + scale_colour_manual(values = colors_network_plot) + scale_fill_manual(values = colors_network_plot) + guides(color = guide_legend(override.aes= list(alpha = 1)))  + theme_classic() + ggtitle("Figure 1e, 2e, and 3e")
+  myplot <- myplot + geom_hline(yintercept = 0, size = 0.1) 
+# } 
+
+xtitle_size = 6
+title_size = 6
+legend_title_size = 3
+myplot <- add_theme(myplot, xtitle_size, title_size, legend_title_size)
+myplot$labels$fill <- NULL
+myplot <- myplot + scale_colour_manual(values = colors_network_plot)
+leg <- get_legend(myplot)
+plot_leg <- as_ggplot(leg)
+myplot <- myplot + theme(legend.position = "off")
+print(myplot)
+```
+
+# calculate intra-subject correlation between insula activation and CADSS and 5D-ASC and conduct multiple comparison corrections: Suppl. Results
+```{r fig.width=5,fig.height=5, fig.align='center',comment= NA, message=FALSE, tidy = TRUE, results='asis',warning=FALSE}
+
+all_data_forcorr <- all_data %>%
+  dplyr:: select(Subjects, Dosage, CADSS_depersonalization_post_pre, CADSS_derealization_post_pre, dascscore_bliss, CADSS_amnesia_post_pre, dascscore_anxiety, matches('Insula'))
+
 ## calculate intra-subject correlation between insula activation and CADSS and 5D-ASC
 rmc_variables <- colnames(all_data_forcorr)[-1:-2]
 plot_variable <- c('Depersonalization','Derealization', 'Bliss', 'Amnesia', 'Anxiety', 'Insula activation')
@@ -132,165 +251,5 @@ colnames(p_rmc_plot_adj) <- plot_variable
 rownames(p_rmc_plot_adj) <- plot_variable
 
 col<- colorRampPalette(c("blue", "white","red"))(8)
-tiff(file=paste(Figuredir, "/TIFF/RepeatedCorrelation/rmcorr_insula", sep = ""), width=5, height=5, res=300, units="in")
-corrplot(r_rmc_plot, method = "number", tl.col="black", tl.srt=45, p.mat = p_rmc_plot_adj, sig.level = 0.05, insig = "blank", col = col)
-dev.off()
-
-pdf(file=paste(Figuredir, "/PDF/RepeatedCorrelation/rmcorr_insula", sep = ""), width=3.7, height=3.7)
-corrplot(r_rmc_plot, tl.col="black", tl.srt=90, p.mat = p_rmc_plot_adj, sig.level = 0.05,number.digits = 2, insig = "blank", col = col)
-dev.off()
-
-
-
-# mediators
-mediators <- colnames(all_data)[4:9]
-dvs <- colnames(all_data)[c(11)] # insula activation
-df_total = data.frame()
-detach("package:lmerTest", unload=TRUE)
-library(mediation)
-for (imed in 1: length(mediators)) {
-  mediator <- mediators[imed]
-  for (idv in 1:length(dvs)) {
-    dv <- dvs[idv]
-    
-    
-    test_data <- all_data %>%
-      select(c('Subjects', 'Dosage', dv, mediator)) %>%
-      na.omit() 
-    
-    b <- test_data %>%
-      ggplot(aes_string(x = dv, y = mediator)) + geom_point(aes(color = Dosage),size = 1, alpha=1)
-
-    # z score across all conditions
-    test_data <- test_data %>%
-      mutate_at(colnames(test_data)[3:4], ~(scale(as.numeric(.), center = TRUE, scale = TRUE) %>% as.vector))
-        
-    # within subject demean
-    test_data <- test_data %>%
-      group_by(Subjects) %>%
-      mutate_at(colnames(test_data)[3:4], ~(scale(as.numeric(.), center = TRUE, scale = FALSE) %>% as.vector))
-    
-    # iv -> dv
-    formula_totaleffect <- as.formula(paste(dv, " ~ Dosage + (1|Subjects)"))
-    model_totaleffect <- lmer(formula_totaleffect, data = test_data, REML = FALSE)
-    anova(model_totaleffect,type = 'marginal')
-    
-    # iv -> mediator
-    formula_mediator <- as.formula(paste(mediator, " ~ Dosage + (1|Subjects)"))
-    model_mediator <- lmer(formula_mediator, data = test_data, REML = FALSE)
-    anova(model_mediator,type = 'marginal')
-    
-    # {iv, mediator} -> dv
-    formula_dv <- as.formula(paste(dv, " ~ " , mediator, " + Dosage + (1|Subjects)"))
-    model_dv <- lmer(formula_dv, data = test_data, REML = FALSE)
-    anova(model_dv,type = 'marginal')
-    
-    # mediation model
-    mediatorModel <- mediate(model_mediator, model_dv, treat='Dosage', control.value = "Placebo", treat.value = "0.5mg/kg", mediator=mediator)
-    a <- summary(mediatorModel) 
-    
-    if (a$d0.p < 1) { # was 0.05 for the paper
-      print(paste(mediator, ' ', dv, ' ', a$d0, ' ', a$d0.ci[1], ' ', a$d0.ci[2], ' ', a$d0.p))
-      model <- cbind(mediator, dv, a$d0, a$d0.ci[1], a$d0.ci[2], a$d0.p, a$z0, a$tau.coef, fixef(model_mediator)[2], fixef(model_dv)[2])
-      df_total <- rbind(df_total,model)
- 
-    }
- 
-  }
-  
-}
-if (length(df_total) > 0) {
-      colnames(df_total) <- c('mediator', 'dependent variable', 'ACME', 'upper CI', 'lower CI','p','direct','total','iv-med','med-dv')
-    }
-
+corrplot(r_rmc_plot, method = "number", tl.col="black", tl.srt=45, p.mat = p_rmc_plot_adj, sig.level = 0.5, insig = "blank", col = col, title = 'intra-subject correlation', mar=c(0,0,1,0)) # sig.levele = 0.05 for the paper
 ```
-
-# visualization of high dissociator vs. low dissociator
-```{r}
-# visualization for 0.5 and placebo individually
-all_data <- Reduce(function(x, y) merge(x, y, by = c("Subjects", "Dosage"), all=TRUE), list(non_brain_data_post_pre, Faces_data_contrast)) %>%
-  filter(Dosage != '0.05mg/kg')
-
-# mediators
-mediators <- colnames(all_data)[c(4:9)]
-# dependent variable
-dvs <- colnames(all_data)[c(10)]
-
-
-imed = 1 # change to visualize different mediator
-mediator <- mediators[imed]
-idv = 1
-dv <- dvs[idv]
-
-test_data <- all_data %>%
-  select(c('Subjects', 'Dosage', dv, mediator)) %>%
-  na.omit() 
-
-# get values for high and low dissociators
-highdose <- test_data$Dosage == "0.5mg/kg"
-subject_highdose <- test_data$Subjects[highdose]
-cadss_highdose <- test_data %>%
-  filter(highdose) %>%
-  select(mediator)
-
-disso_median <- cadss_highdose %>%
-  summarise(median = median(get(mediator), na.rm = TRUE))
-
-disso_median <- disso_median$median
-
-subject_highdisso <- subject_highdose[cadss_highdose > disso_median] 
-subject_lowdisso <- subject_highdose[cadss_highdose <= disso_median]
-
-test_data <- test_data %>%
-  mutate(high_disso = case_when(Subjects %in% subject_highdisso ~ "high_dis", Subjects %in% subject_lowdisso ~ "low_dis")) %>%
-  mutate(high_disso = factor(high_disso, levels = c("low_dis", "high_dis"))) %>%
-  mutate(noncon_TvN_Right_antInsula_peak_nonconscious = as.numeric(noncon_TvN_Right_antInsula_peak_nonconscious)) %>%
-  filter(Dosage == "0.5mg/kg") %>%
-  na.omit() 
-
-# summarize mean and sd
-
-data_fortest_sta <- test_data %>%
-  group_by(high_disso) %>%
-  summarise(
-    count = sum(!is.na(noncon_TvN_Right_antInsula_peak_nonconscious)),
-    sd = sd(noncon_TvN_Right_antInsula_peak_nonconscious, na.rm = TRUE),
-    se = sd / sqrt(count),
-    avg = mean(noncon_TvN_Right_antInsula_peak_nonconscious, na.rm = TRUE))
-
-
-
-
-ylim_max <- max(data_fortest_sta$avg) + 1.2 * max(data_fortest_sta$se)
-ylim_min <- min(data_fortest_sta$avg) - 1.2 * max(data_fortest_sta$se)
-
-colors_network_plot <- c("#A2DAB9", "#1E8E4C")
-xlabel_text = c("low", "high")
-
-myplot <- data_fortest_sta %>%
-  ggplot(aes(x = high_disso, y = avg)) +
-  geom_col(aes(fill = high_disso), alpha = 1, size = 0.25, position=position_dodge()) +
-  geom_errorbar(aes(color = high_disso, ymin = avg-se, ymax = avg+se), width = 0, size = 0.25, position=position_dodge(.9)) + scale_colour_manual(values = colors_network_plot) + scale_fill_manual(values = colors_network_plot) + guides(color = guide_legend(override.aes= list(alpha = 1))) + scale_y_continuous(name="Size of effect", limits=c(0, 1.1), breaks = c(0, 0.2, 0.4, 0.6, 0.8, 1), expand = c(0, 0)) +  coord_cartesian(ylim = c(0.4, 0.8)) + theme_classic() #  c(ylim_min, ylim_max) + ggtitle("CADSS by Insula activation")
-# if (ylim_min < 0) {
-  myplot <- myplot + geom_hline(yintercept = 0, size = 0.1) 
-# } 
-
-xtitle_size = 6
-title_size = 6
-legend_title_size = 3
-myplot <- add_theme(myplot, xtitle_size, title_size, legend_title_size)
-myplot$labels$fill <- NULL
-myplot <- myplot + scale_colour_manual(values = colors_network_plot)
-leg <- get_legend(myplot)
-plot_leg <- as_ggplot(leg)
-myplot <- myplot + theme(legend.position = "off")
-
-# TIFF
-figure_width = 1.2
-i_task <- "nonconscious"
-i_con <- "ThreatvsNeutral"
-ggsave(file=paste(Figuredir, "/TIFF/Boxplot/",i_task, "_",i_con, "_amnesia_insula_2col.TIFF", sep = ""), plot=myplot, width=figure_width, height=1.3, dpi = 1000)
-# PDF
-ggsave(file=paste(Figuredir, "/PDF/Boxplot/", i_task, "_",i_con,  "_amnesia_insula_2col.PDF", sep = ""), device = cairo_pdf, plot=myplot, width=figure_width, height=1.3, dpi = 300)
-```
-
