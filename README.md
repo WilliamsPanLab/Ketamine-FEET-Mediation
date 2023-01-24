@@ -22,7 +22,7 @@ All stpes could be done on a standard research computer with reasonable CPUs and
 
 the analysis was conducted and only tested for running on macOS Mojave (10.14.1) and Monterey (12.2.1).
 
-##### Softwares
+##### Software
 - [Matlab_R2020b](https://www.mathworks.com/products/new_products/release2020b.html) for neuroimaging analysis
   -  Matlab dependencies: [SPM8](https://www.fil.ion.ucl.ac.uk/spm/software/spm8/), [DPABI V6.0_210501](http://rfmri.org/content/dpabi-v60-and-dpabinet-v10-were-released).
 - [R version 4.0.5](https://www.r-project.org/) for non-neuroimaging analysis and mediation analysis
