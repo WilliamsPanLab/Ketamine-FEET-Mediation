@@ -41,7 +41,7 @@ the analysis was conducted and only tested for running on macOS Mojave (10.14.1)
 
   1. We recommend to use [Rstudio](https://support--rstudio-com.netlify.app/products/rstudio/download/) to open `Ketamine-FEET-Mediation/LME_mediation/FEET_CADSS_5DASC_Analysis.Rproj`   
   
-  2. Open `Ketamine-FEET-Mediation/LME_mediation/RMD/P50_LME_visualization.Rmd` and press `Knit` in Rstudio to generate .html results report. The results should be comparable to `LME_mediation/Results/P50_correlation_mediation.html`
+  2. Open `Ketamine-FEET-Mediation/LME_mediation/RMD/P50_LME_visualization.Rmd` and press `Knit` in Rstudio to generate .html results report. The results should be comparable to `LME_mediation/Results/P50_LME_visualization.html`
   
   3. Open `Ketamine-FEET-Mediation/LME_mediation/RMD/P50_correlation_mediation.Rmd` and press `Knit` in Rstudio to generate .html results report. The results should be comparable to `LME_mediation/Results/P50_correlation_mediation.html`
 
