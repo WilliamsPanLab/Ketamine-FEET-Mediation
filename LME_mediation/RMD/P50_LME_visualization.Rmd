@@ -249,7 +249,7 @@ for (i_task in task_name) {
 
     # run LME and generate statistics
     rois = unique(data_fortest$variables)
-    formula <-  as.formula(paste("value ~ Dosage + (1|Subjects)", sep = ""))
+    formula <-  as.formula(paste("value ~ Dosage  + Age + Sex + (1|Subjects)", sep = ""))
     print(data_fortest %>%
             filter(variables %in% rois) %>% 
             split(.$variables) %>%
